@@ -196,6 +196,38 @@ function generateFormatterExamples(formatterInfo, prereleaseVersion) {
 }
 
 /**
+ * Generate a doc page that lists all of the rules and links to them
+ * @param {string} basedir The directory in which to look for code.
+ * @returns {void}
+ */
+function generateRuleIndexPage(basedir) {
+    var result = {},
+        outputFile = "../eslint.github.io/docs/rules/index.md";
+
+    find(path.join(basedir, "/lib/rules/")).filter(fileType("js")).forEach(function(filename) {
+        var rule = require(filename);
+
+        var basename = path.basename(filename, ".js"),
+            output = {
+                name: basename,
+                description: rule.meta.docs.description,
+                recommended: rule.meta.docs.recommended || false,
+                fixable: !!rule.meta.fixable
+            },
+            categoryName = rule.meta.docs.category.replace(/\s|\./g, "");
+
+        if (!result[categoryName]) {
+            result[categoryName] = [];
+        }
+        result[categoryName].push(output);
+    });
+
+    var output = ejs.render(cat(path.resolve("./templates/rule-index.md.ejs")), {rules: result});
+
+    output.to(outputFile);
+}
+
+/**
  * Creates a release version tag and pushes to origin.
  * @returns {void}
  */
@@ -1133,4 +1165,8 @@ target.release = function() {
 
 target.prerelease = function(args) {
     prerelease(args[0]);
+};
+
+target.genIndex = function() {
+    generateRuleIndexPage(process.cwd());
 };
